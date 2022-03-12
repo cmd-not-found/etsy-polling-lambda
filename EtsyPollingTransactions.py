@@ -21,11 +21,11 @@ def db_table_query(query_key):
     return token
 
 # set contants 
-BUCKET = os.environ.get('BUCKET')
-API_KEYSTRING = os.environ.get('API_KEYSTRING')
-BASE_URL = os.environ.get('BASE_URL')
-SHOP_ID = os.environ.get('SHOP_ID')
-USER_ID = os.environ.get('USER_ID')
+BUCKET = db_table_query('ETSY_BUCKET')
+API_KEYSTRING = db_table_query('ETSY_APY_KEYSTRING')
+BASE_URL = 'https://api.etsy.com/v3/application'
+SHOP_ID = db_table_query('ETSY_SHOP_ID')
+USER_ID = db_table_query('ETSY_USER_ID')
 ETSY_ACCESS_TOKEN = db_table_query('ETSY_ACCESS_TOKEN')
 ETSY_REFRESH_TOKEN = db_table_query('ETSY_REFRESH_TOKEN')
 
@@ -64,9 +64,9 @@ def refresh_token():
     if resp.status_code == 200:
         new_access_token = resp.json().get('access_token')
         new_refresh_token = resp.json().get('refresh_token')
-        table.put_item(Item={'oauth_key_value': new_access_token, 'oauth_key_type': 'ETSY_ACCESS_TOKEN'})
-        table.put_item(Item={'oauth_key_value': new_refresh_token, 'oauth_key_type': 'ETSY_REFRESH_TOKEN'})
-        table.put_item(Item={'oauth_key_value': timestamp, 'oauth_key_type': 'ETSY_LAST_UPDATED'})
+        db_update_table(new_access_token, 'ETSY_ACCESS_TOKEN')
+        db_update_table(new_refresh_token, 'ETSY_REFRESH_TOKEN')
+        db_update_table(timestamp, 'ETSY_LAST_UPDATED')
         return True
     else:
         return False
