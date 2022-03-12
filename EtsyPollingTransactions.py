@@ -21,7 +21,7 @@ def db_table_query(query_key):
 
 # set contants 
 BUCKET = db_table_query('ETSY_BUCKET')
-API_KEYSTRING = db_table_query('ETSY_APY_KEYSTRING')
+API_KEYSTRING = db_table_query('ETSY_API_KEYSTRING')
 BASE_URL = 'https://api.etsy.com/v3/application'
 SHOP_ID = db_table_query('ETSY_SHOP_ID')
 USER_ID = db_table_query('ETSY_USER_ID')
