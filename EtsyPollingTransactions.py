@@ -21,13 +21,14 @@ def db_table_query(query_key):
 
 # set contants 
 def update_constants():
-    global BUCKET = db_table_query('ETSY_BUCKET')
-    global API_KEYSTRING = db_table_query('ETSY_API_KEYSTRING')
-    global BASE_URL = 'https://api.etsy.com/v3/application'
-    global SHOP_ID = db_table_query('ETSY_SHOP_ID')
-    global USER_ID = db_table_query('ETSY_USER_ID')
-    global ETSY_ACCESS_TOKEN = db_table_query('ETSY_ACCESS_TOKEN')
-    global ETSY_REFRESH_TOKEN = db_table_query('ETSY_REFRESH_TOKEN')
+    global BUCKET, API_KEYSTRING, BASE_URL, SHOP_ID, USER_ID, ETSY_ACCESS_TOKEN, ETSY_REFRESH_TOKEN
+    BUCKET = db_table_query('ETSY_BUCKET')
+    API_KEYSTRING = db_table_query('ETSY_API_KEYSTRING')
+    BASE_URL = 'https://api.etsy.com/v3/application'
+    SHOP_ID = db_table_query('ETSY_SHOP_ID')
+    USER_ID = db_table_query('ETSY_USER_ID')
+    ETSY_ACCESS_TOKEN = db_table_query('ETSY_ACCESS_TOKEN')
+    ETSY_REFRESH_TOKEN = db_table_query('ETSY_REFRESH_TOKEN')
 
 
 def db_table_query(query_key):
