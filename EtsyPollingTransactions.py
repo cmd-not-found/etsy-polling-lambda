@@ -1,7 +1,8 @@
 import os
 import json
 import boto3
-import requests
+from botocore.vendored import requests
+# import requests
 import datetime
 from boto3.dynamodb.conditions import Key
 
