@@ -20,13 +20,14 @@ def db_table_query(query_key):
     return token
 
 # set contants 
-BUCKET = db_table_query('ETSY_BUCKET')
-API_KEYSTRING = db_table_query('ETSY_API_KEYSTRING')
-BASE_URL = 'https://api.etsy.com/v3/application'
-SHOP_ID = db_table_query('ETSY_SHOP_ID')
-USER_ID = db_table_query('ETSY_USER_ID')
-ETSY_ACCESS_TOKEN = db_table_query('ETSY_ACCESS_TOKEN')
-ETSY_REFRESH_TOKEN = db_table_query('ETSY_REFRESH_TOKEN')
+def update_constants():
+    global BUCKET = db_table_query('ETSY_BUCKET')
+    global API_KEYSTRING = db_table_query('ETSY_API_KEYSTRING')
+    global BASE_URL = 'https://api.etsy.com/v3/application'
+    global SHOP_ID = db_table_query('ETSY_SHOP_ID')
+    global USER_ID = db_table_query('ETSY_USER_ID')
+    global ETSY_ACCESS_TOKEN = db_table_query('ETSY_ACCESS_TOKEN')
+    global ETSY_REFRESH_TOKEN = db_table_query('ETSY_REFRESH_TOKEN')
 
 
 def db_table_query(query_key):
@@ -66,6 +67,7 @@ def refresh_token():
         db_update_table(new_access_token, 'ETSY_ACCESS_TOKEN')
         db_update_table(new_refresh_token, 'ETSY_REFRESH_TOKEN')
         db_update_table(timestamp, 'ETSY_LAST_UPDATED')
+        update_constants()
         return True
     else:
         return False
@@ -130,6 +132,7 @@ def handler(event, context):
     '''
 
     # Retrieve Latest Etsy Update
+    update_constants()
     trans = get_shop_trans()
     process_trans(trans.get('results', []))
     # Query Etsy for Orders
