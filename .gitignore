@@ -131,3 +131,4 @@ dmypy.json
 # custom lambda stuff
 python/
 requests.zip
+test.out
