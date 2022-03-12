@@ -95,7 +95,7 @@ def get_shop_trans():
     # if no errors, return latest transactions
     if resp.status_code == 200:
         timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        obj = s3.Object('etsy/' + BUCKET, f'etsy_trans_{timestamp}.json')
+        obj = s3.Object(BUCKET, 'etsy/' + f'etsy_trans_{timestamp}.json')
         obj.put(Body=json.dumps(resp.json(), indent=4))
         return resp.json()
     else:
@@ -121,7 +121,7 @@ def process_trans(trans):
         
         # new order not caught with previous query
         if paid_time > queried_time:
-            obj = s3.Object('etsy/' + BUCKET, f'etsy_trans_{timestamp}.json')
+            obj = s3.Object(BUCKET, 'etsy/' + f'etsy_trans_{timestamp}.json')
             obj.put(Body=json.dumps(tran, indent=4))
         
         new_trans.append(tran)
@@ -139,5 +139,5 @@ def handler(event, context):
     # Query Etsy for Orders
     # add receipt to S3 bucket
     # timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-    # obj = s3.Object('etsy/' + BUCKET, f'etsy_receipt_{timestamp}.json')
+    # obj = s3.Object(BUCKET, 'etsy/' + f'etsy_receipt_{timestamp}.json')
     # res = obj.put(Body=json.dumps(data, indent=4))
