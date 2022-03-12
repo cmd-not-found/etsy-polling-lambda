@@ -94,7 +94,7 @@ def get_shop_trans():
     if resp.status_code == 200:
         timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         obj = s3.Object('etsy/' + os.environ.get('BUCKET'), f'etsy_trans_{timestamp}.json')
-        obj.put(Body=json.dumps(tran, indent=4))
+        obj.put(Body=json.dumps(resp.json(), indent=4))
         return resp.json()
     else:
         return {}
