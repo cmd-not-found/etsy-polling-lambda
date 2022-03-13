@@ -90,6 +90,10 @@ def get_shop_trans():
     if resp.status_code == 401 and resp.json().get('error') == 'invalid_token':
         if refresh_token():
             # re-fetch after getting new token
+            headers = {
+                'x-api-key': API_KEYSTRING,
+                'Authorization' : f'Bearer {ETSY_ACCESS_TOKEN}'
+            }
             resp = requests.get(url, headers=headers)
     
     # if no errors, return latest transactions
