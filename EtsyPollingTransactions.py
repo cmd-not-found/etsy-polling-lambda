@@ -69,7 +69,7 @@ class etsy():
         '''
         Update Etsy Oauth tokens after epiration.
         '''
-        logger.info('Attempting to update Access and Refresh tokens...')
+        logger.info('NEW METHOD | Attempting to update Access and Refresh tokens...')
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -80,7 +80,7 @@ class etsy():
         }
         resp = requests.post(self.oauth_url, headers=headers, data=data)
         if resp.status_code == 200:
-            logger.info('Sucessfully updated Access and Refresh tokens...')
+            logger.info('NEW METHOD | Sucessfully updated Access and Refresh tokens...')
             self.set_access_token(resp.json().get('access_token'))
             self.set_refresh_token(resp.json().get('refresh_token'))
             self.set_headers()
@@ -261,8 +261,8 @@ def handler(event, context):
 
     # OLD METHOD | Retrieve Latest Etsy Update
     update_constants()
-    trans = get_shop_trans()
-    process_trans(trans.get('results', []))
+    # trans = get_shop_trans()
+    # process_trans(trans.get('results', []))
 
     # NEW METHOD | Retrieve Latest Etsy Update
     etsy_api = etsy(
@@ -274,5 +274,8 @@ def handler(event, context):
     )
     trans2 = etsy_api.get_shop_trans()
     timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+    db_update_table(etsy_api.get_access_token(), 'ETSY_ACCESS_TOKEN')
+    db_update_table(etsy_api.get_refresh_token(), 'ETSY_REFRESH_TOKEN')
+    db_update_table(timestamp, 'ETSY_LAST_UPDATED')
     obj = s3.Object(BUCKET, 'etsy/' + f'etsy_new_trans_{timestamp}.json')
     obj.put(Body=json.dumps(trans2, indent=4))
