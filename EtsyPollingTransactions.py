@@ -1,6 +1,5 @@
 import os
 import json
-from weakref import ref
 import boto3
 import logging
 import requests
@@ -127,6 +126,14 @@ class etsy():
         resp = self._http_req('GET', path)
         return resp
 
+    def get_shop_receipt(self, receipt_id):
+        '''
+        Retrieve Etsy shop receipt.
+        '''
+        logger.info('NEW METHOD | Retrieving transaction receipt...')
+        path = f'/shops/{self.shop_id}/receipts/{receipt_id}'
+        resp = self._http_req('GET', path)
+        return resp
 
 
 def db_table_query(query_key):
@@ -168,66 +175,6 @@ def db_update_table(update_key_valu, update_key_type):
     table.put_item(Item={'oauth_key_value': update_key_valu, 'oauth_key_type': update_key_type})
 
 
-def refresh_token():
-    '''
-    Update Etsy Oauth tokens after epiration.
-    '''
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-    url = 'https://api.etsy.com/v3/public/oauth/token'
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
-    data = {
-        'grant_type': 'refresh_token',
-        'client_id': API_KEYSTRING,
-        'refresh_token': ETSY_REFRESH_TOKEN
-    }
-    logger.info('OLD METHOD | Refreshing token...')
-    resp = requests.post(url, headers=headers, data=data)
-    if resp.status_code == 200:
-        new_access_token = resp.json().get('access_token')
-        new_refresh_token = resp.json().get('refresh_token')
-        db_update_table(new_access_token, 'ETSY_ACCESS_TOKEN')
-        db_update_table(new_refresh_token, 'ETSY_REFRESH_TOKEN')
-        db_update_table(timestamp, 'ETSY_LAST_UPDATED')
-        update_constants()
-        return True
-    else:
-        return False
-
-
-def get_shop_trans():
-    '''
-    Query for recent Etsy transactions. 
-    '''
-    # set up url and request
-    url = BASE_URL + f'/shops/{SHOP_ID}/transactions'
-    headers = {
-        'x-api-key': API_KEYSTRING,
-        'Authorization' : f'Bearer {ETSY_ACCESS_TOKEN}'
-    }
-    logger.info('OLD METHOD | Retrieving shop transactions...')
-    resp = requests.get(url, headers=headers)
-
-    # if resp requires new token
-    if resp.status_code == 401 and resp.json().get('error') == 'invalid_token':
-        if refresh_token():
-            # re-fetch after getting new token
-            headers = {
-                'x-api-key': API_KEYSTRING,
-                'Authorization' : f'Bearer {ETSY_ACCESS_TOKEN}'
-            }
-            resp = requests.get(url, headers=headers)
-    
-    # if no errors, return latest transactions
-    if resp.status_code == 200:
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        obj = s3.Object(BUCKET, 'etsy/' + f'etsy_trans_{timestamp}.json')
-        obj.put(Body=json.dumps(resp.json(), indent=4))
-        return resp.json()
-    else:
-        return {}
-
 def process_trans(trans):
     '''
     Process latest transactions and compare against last queried.
@@ -240,7 +187,7 @@ def process_trans(trans):
         # get last queried time and then update it with now()
         timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
         queried_timestamp = db_table_query('ETSY_LAST_QUERIED')
-        table.put_item(Item={'oauth_key_value': timestamp, 'oauth_key_type': 'ETSY_LAST_QUERIED'})
+        db_update_table(timestamp, 'ETSY_LAST_QUERIED')
         
         # process timestamps
         paid_time = datetime.datetime.fromtimestamp(tran.get('paid_timestamp'))
@@ -258,11 +205,7 @@ def handler(event, context):
     '''
     Routine polling Etsy for new orders while maintaining Oauth API keys in DynamoDB table.
     '''
-
-    # OLD METHOD | Retrieve Latest Etsy Update
     update_constants()
-    # trans = get_shop_trans()
-    # process_trans(trans.get('results', []))
 
     # NEW METHOD | Retrieve Latest Etsy Update
     etsy_api = etsy(
@@ -272,10 +215,22 @@ def handler(event, context):
         shop_id=SHOP_ID,
         user_id=USER_ID
     )
-    trans2 = etsy_api.get_shop_trans()
+    trans = etsy_api.get_shop_trans()
     timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+    
+    # update the db after refresh
     db_update_table(etsy_api.get_access_token(), 'ETSY_ACCESS_TOKEN')
     db_update_table(etsy_api.get_refresh_token(), 'ETSY_REFRESH_TOKEN')
     db_update_table(timestamp, 'ETSY_LAST_UPDATED')
+    
+    # save recent transactions 
     obj = s3.Object(BUCKET, 'etsy/' + f'etsy_new_trans_{timestamp}.json')
-    obj.put(Body=json.dumps(trans2, indent=4))
+    obj.put(Body=json.dumps(trans, indent=4))
+
+    # retrieve receipt and save file
+    rec = etsy_api.get_shop_receipt(trans['results'][0].get('receipt_id'))
+    obj_r = s3.Object(BUCKET, 'etsy/' + f'etsy_receipt_{timestamp}.json')
+    obj_r.put(Body=json.dumps(rec, indent=4))
+
+    # process transactions
+    # process_trans(trans.get('results', []))
